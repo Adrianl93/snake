@@ -1,20 +1,9 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import "react-native-gesture-handler";
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import Game from './src/components/Game';
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default function App():JSX.Element {
+  return( <GestureHandlerRootView style={{ flex: 1, backgroundColor:"green"}}>
+            <Game/>
+  </GestureHandlerRootView>
+)};
