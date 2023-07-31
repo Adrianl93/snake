@@ -1,9 +1,14 @@
 import * as React from 'react';
-import { SafeAreaView, StyleSheet, View } from 'react-native';
+import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { PanGestureHandler } from 'react-native-gesture-handler';
 import { Colors } from "../styles/colors";
 import Header from './Header';
 import { Coordinate, Direction, GestureEventType } from '../types/types';
+import Snake from './Snake';
+import { checkGameOver } from '../utils/checkGameOver';
+import Food from './Food';
+import { checkEatsFood } from '../utils/checkEatsFood';
+import { randomFoodPosition } from '../utils/randomFoodPosition';
 
 
 //GAME CONSTANTS
@@ -19,29 +24,40 @@ export default function Game():JSX.Element{
     const [snake, setSnake] = React.useState<Coordinate[]>(SNAKE_INITIAL_POSITION);
     const [food, setFood] = React.useState<Coordinate>(FOOD_INITIAL_POSITION);
     const [isGameOver, setIsGameOver] = React.useState<boolean>(false);
+    const [isPaused, setIsPaused] = React.useState<boolean>(false);
+    const [score, setScore] = React.useState<number>(0)
 
     React.useEffect(() => {
         if (!isGameOver){
             const intervalID = setInterval(() => {
-                moveSnake();
+                !isPaused && moveSnake();
             }, MOVE_INTERVAL)
             return () => clearInterval(intervalID);
 
         }
-    }, [isGameOver]);
+    }, [isGameOver, snake, isPaused]);
 
     const moveSnake = () => {
         const snakeHead = snake[0]
         const newHead = { ...snakeHead }; //create a head copy
 
         // Check Game over
+        if(checkGameOver(snakeHead,GAME_BOUNDS)){
+            setIsGameOver((prev) => !prev);
+            return;
+        }
+
+
         switch(direction) {
             case Direction.Up:
                 newHead.y -= 1;
+                break;
             case Direction.Down:
                 newHead.y += 1;
+                break;
             case Direction.Left:
                 newHead.x -= 1;
+                break;
             case Direction.Right:
                 newHead.x += 1;
                 break;
@@ -50,7 +66,18 @@ export default function Game():JSX.Element{
         }
 
         // check if eats food
-        setSnake([newHead, ...snake.slice(0, -1)]) //move Snake
+        if(checkEatsFood(newHead, food, 2)){
+        
+            setFood(randomFoodPosition(GAME_BOUNDS.xMax, GAME_BOUNDS.yMax));
+            setSnake([newHead, ...snake]);
+            setScore(score + SCORE_INCREMENT)
+        } else {
+            setSnake([newHead, ...snake.slice(0, -1)]) //move Snake
+            // setTimeout(() => {
+            //     console.log("Retrasado por 30 segundos.");
+            //     }, "30000");
+        }
+        
 
     };
 
@@ -87,13 +114,42 @@ export default function Game():JSX.Element{
         }
 
     };
+
+    const pauseGame = () => {
+        setIsPaused(!isPaused);
+    };
+
+    const reloadGame = () =>{
+        setSnake(SNAKE_INITIAL_POSITION);
+        setFood(FOOD_INITIAL_POSITION);
+        setIsGameOver(false);
+        setScore(0);
+        setDirection(Direction.Right);
+        setIsPaused(false);
+
+    };
+
+
     return(
 <PanGestureHandler onGestureEvent={handleGesture}>
     <SafeAreaView style={styles.container}>
-        {/* <Header>
-        </Header> */}
+        <Header
+        reloadGame={reloadGame}
+        isPaused={isPaused}
+        pauseGame={pauseGame}>
+            <Text
+            style={{
+                fontSize: 22,
+                fontWeight: "bold",
+                color: Colors.primary,
+            }}>
+                Score: {score}
+                </Text>
+        </Header>
         <View style={styles.boundaries}>
-            <View style={styles.snake}/> 
+            <Snake snake={snake}/>
+            <Food x={food.x} y={food.y}/>
+            
             
         </View>
         
@@ -115,10 +171,5 @@ const styles = StyleSheet.create({
         borderColor: Colors.primary,
         backgroundColor: Colors.background,
         
-    },
-    snake: {
-        width:20,
-        height: 20,
-        backgroundColor: 'red',
     }
 })
